@@ -32,6 +32,7 @@ Create a `.env.local` file and set your API base URL:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=your_api_base_url
+DOTNET_API_BASE_URL=your_api_base_url
 ```
 
 **3. Start the development server**
