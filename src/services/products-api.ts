@@ -23,7 +23,7 @@ interface ProductApiResponse {
   brandName: string;
   price: number;
   rating: number;
-  imagePath?: string;
+  imagePath?: string | null;
 }
 
 interface ProductApiPagedResponse {
@@ -80,13 +80,14 @@ function getApiBaseUrl(): string {
 }
 
 function mapApiProduct(product: ProductApiResponse): Product {
-  const imagePath = product.imagePath?.trim();
+  const imagePath = product.imagePath?.trim() || "";
 
   return {
     id: product.productId,
     name: product.name,
     description: product.description,
     price: product.price,
+    imagePath,
     imageUrl: imagePath
       ? `${getApiBaseUrl()}/${imagePath.replace(/^\/+/, "")}`
       : "",
@@ -105,10 +106,9 @@ export async function fetchProductsFromApi(
   const queryString = buildQueryString(params);
   const querySuffix = queryString ? `?${queryString}` : "";
 
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/v1/products/search${querySuffix}`,
-    { signal },
-  );
+  const response = await fetch(`/api/products${querySuffix}`, {
+    signal,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch products (${response.status}).`);
@@ -129,7 +129,7 @@ export async function fetchProductById(
   id: number,
   signal?: AbortSignal,
 ): Promise<Product> {
-  const response = await fetch(`${getApiBaseUrl()}/api/v1/Products/${id}`, {
+  const response = await fetch(`/api/products/${id}`, {
     signal,
   });
 

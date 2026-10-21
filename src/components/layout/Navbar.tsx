@@ -23,13 +23,13 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const router = useRouter();
   const pathname = usePathname();
-
-  // Temporary placeholders until authentication is connected.
-  const isLoggedIn = false;
-  const userName = "";
 
   function handleSearch() {
     const query = searchTerm.trim();
@@ -49,6 +49,12 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
+  function getLinkClass(href: string) {
+    return `whitespace-nowrap transition-colors hover:text-orange-600 ${
+      isActive(href) ? "font-bold text-orange-600" : "font-medium text-gray-600"
+    }`;
+  }
+
   const navigationLinks = [
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
@@ -60,10 +66,33 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
       : []),
   ];
 
-  function getLinkClass(href: string) {
-    return `whitespace-nowrap transition-colors hover:text-orange-600 ${
-      isActive(href) ? "font-bold text-orange-600" : "font-medium text-gray-600"
-    }`;
+  async function handleLogout() {
+    if (isLoggingOut) return;
+
+    try {
+      setIsLoggingOut(true);
+      setLogoutError(null);
+
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed.");
+      }
+
+      setIsLoggedIn(false);
+      setUserName("");
+      setProfileOpen(false);
+      setMenuOpen(false);
+
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setLogoutError("Unable to log out. Please try again.");
+    } finally {
+      setIsLoggingOut(false);
+    }
   }
 
   return (
@@ -92,7 +121,6 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
             <span className="text-2xl font-black italic tracking-tight text-orange-600">
               Swift
             </span>
-
             <span className="ml-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
               Cart
             </span>
@@ -172,13 +200,12 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white py-2 shadow-lg">
+              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-gray-100 bg-white py-2 shadow-lg">
                 {isLoggedIn ? (
                   <>
                     {userName && (
                       <div className="border-b border-gray-100 px-4 pb-2 pt-1">
                         <p className="text-xs text-gray-500">Signed in as</p>
-
                         <p className="truncate pt-1 text-sm font-semibold text-gray-800">
                           {userName}
                         </p>
@@ -187,25 +214,40 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setProfileOpen(false);
-                        // Connect the authentication logout function here.
-                      }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <LogOut size={16} />
-                      Logout
+                      {isLoggingOut ? "Logging out..." : "Logout"}
                     </button>
                   </>
                 ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
-                  >
-                    <LogIn size={16} />
-                    Sign In
-                  </Link>
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                    >
+                      <LogIn size={16} />
+                      Sign In
+                    </Link>
+
+                    <Link
+                      href="/register"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
+                    >
+                      <UserRound size={16} />
+                      Create Account
+                    </Link>
+                  </>
+                )}
+
+                {logoutError && (
+                  <p role="alert" className="px-4 py-2 text-sm text-red-600">
+                    {logoutError}
+                  </p>
                 )}
               </div>
             )}
@@ -243,13 +285,25 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
             ))}
 
             {isLoggedIn && (
-              <Link
-                href="/cart"
-                onClick={() => setMenuOpen(false)}
-                className="block rounded-md px-3 py-3 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600"
-              >
-                Cart ({cartItemCount})
-              </Link>
+              <>
+                <Link
+                  href="/cart"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-md px-3 py-3 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600"
+                >
+                  Cart ({cartItemCount})
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50"
+                >
+                  <LogOut size={16} />
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </button>
+              </>
             )}
 
             {!isLoggedIn && (
@@ -260,6 +314,12 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
               >
                 Create Account
               </Link>
+            )}
+
+            {logoutError && (
+              <p role="alert" className="px-3 py-2 text-sm text-red-600">
+                {logoutError}
+              </p>
             )}
           </nav>
         )}

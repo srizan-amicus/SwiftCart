@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import AboutHero from "@/components/about/AboutHero";
 import AboutFeatureSection from "@/components/about/AboutFeatureSection";
@@ -100,12 +101,12 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <a
+          <Link
             href="/products"
             className="mt-6 inline-flex min-h-14 items-center justify-center border-2 border-orange-500 px-8 py-3 font-bold text-gray-700 transition-colors hover:bg-orange-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
           >
             Explore Products
-          </a>
+          </Link>
         </div>
       </section>
 

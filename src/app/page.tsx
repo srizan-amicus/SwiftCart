@@ -5,6 +5,7 @@ import QuickLinks from "@/components/home/QuickLinks";
 import FeaturedParts from "@/components/home/FeaturedParts";
 import PopularCategories from "@/components/home/PopularCategories";
 
+
 export const metadata: Metadata = {
   title: "Shop Smarter",
   description:

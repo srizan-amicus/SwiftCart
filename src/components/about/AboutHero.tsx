@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Breadcrumb from "@/components/common/Breadcrumb";
 
 export default function AboutHero() {
   return (
@@ -12,18 +12,10 @@ export default function AboutHero() {
       <div className="absolute inset-0 bg-black/55" />
 
       <div className="relative mx-auto min-h-[320px] max-w-7xl px-6 py-7 sm:min-h-[380px] lg:min-h-[410px]">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-3 text-sm text-white"
-        >
-          <Link href="/" className="font-semibold hover:underline">
-            Home
-          </Link>
-
-          <span aria-hidden="true">|</span>
-
-          <span aria-current="page">About Us</span>
-        </nav>
+        <Breadcrumb
+          variant="light"
+          items={[{ label: "Home", href: "/" }, { label: "About Us" }]}
+        />
 
         <h1 className="mt-10 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
           About SwiftCart

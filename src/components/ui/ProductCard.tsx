@@ -82,7 +82,7 @@ export default function ProductCard({
         )}
 
         <Link
-          href={`/product/${product.id}`}
+          href={`/products/${product.id}`}
           aria-label={`View ${product.name} details`}
           className="flex h-full w-full items-center justify-center"
         >
@@ -110,7 +110,7 @@ export default function ProductCard({
           }
         >
           <Link
-            href={`/product/${product.id}`}
+           href={`/products/${product.id}`}
             className="transition-colors hover:text-orange-600"
           >
             {product.name}
