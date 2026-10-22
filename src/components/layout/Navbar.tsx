@@ -31,15 +31,23 @@ export default function Navbar({ cartItemCount = 0 }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  function handleSearch() {
-    const query = searchTerm.trim();
+ 
+function handleSearch() {
+  const query = searchTerm.trim();
+  const params = new URLSearchParams();
 
-    router.push(
-      query ? `/products?search=${encodeURIComponent(query)}` : "/products",
-    );
-
-    setMenuOpen(false);
+  if (query) {
+    params.set("search", query);
   }
+
+  // A new search must always start on page 1.
+  const queryString = params.toString();
+
+  router.push(queryString ? `/products?${queryString}` : "/products");
+
+  setMenuOpen(false);
+}
+
 
   function isActive(href: string) {
     if (href === "/") {
