@@ -33,9 +33,6 @@ export default function ProductListing({
   const [searchDraft, setSearchDraft] = useState(
     initialParams.search ?? "",
   );
-  const [categoryId, setCategoryId] = useState(
-    initialParams.categoryId?.toString() ?? "",
-  );
   const [brandId, setBrandId] = useState(
     initialParams.brandId?.toString() ?? "",
   );
@@ -77,24 +74,22 @@ export default function ProductListing({
     return () => clearTimeout(timeoutId);
   }, [searchDraft, currentSearch]);
 
-  // Refresh filter controls when the server returns data for a new URL.
-  useEffect(() => {
-    setCategoryId(initialParams.categoryId?.toString() ?? "");
-    setBrandId(initialParams.brandId?.toString() ?? "");
-    setMinPrice(initialParams.minPrice?.toString() ?? "");
-    setMaxPrice(initialParams.maxPrice?.toString() ?? "");
-    setMinRating(initialParams.minRating?.toString() ?? "");
-    setSortBy(initialParams.sortBy ?? "");
-    setSortOrder(initialParams.sortOrder ?? "asc");
-  }, [
-    initialParams.categoryId,
-    initialParams.brandId,
-    initialParams.minPrice,
-    initialParams.maxPrice,
-    initialParams.minRating,
-    initialParams.sortBy,
-    initialParams.sortOrder,
-  ]);
+// Refresh filter controls when the server returns data for a new URL.
+useEffect(() => {
+  setBrandId(initialParams.brandId?.toString() ?? "");
+  setMinPrice(initialParams.minPrice?.toString() ?? "");
+  setMaxPrice(initialParams.maxPrice?.toString() ?? "");
+  setMinRating(initialParams.minRating?.toString() ?? "");
+  setSortBy(initialParams.sortBy ?? "");
+  setSortOrder(initialParams.sortOrder ?? "asc");
+}, [
+  initialParams.brandId,
+  initialParams.minPrice,
+  initialParams.maxPrice,
+  initialParams.minRating,
+  initialParams.sortBy,
+  initialParams.sortOrder,
+]);
 
   function updateUrl(
     changes: Record<string, string | undefined>,
@@ -152,18 +147,12 @@ function applyFilters(event: FormEvent<HTMLFormElement>) {
       return;
     }
 
-    if (categoryId && (!Number.isInteger(Number(categoryId)) || Number(categoryId) < 1)) {
-      setFilterError("Category ID must be a positive integer.");
-      return;
-    }
-
     if (brandId && (!Number.isInteger(Number(brandId)) || Number(brandId) < 1)) {
       setFilterError("Brand ID must be a positive integer.");
       return;
     }
 
     updateUrl({
-      categoryId: categoryId || undefined,
       brandId: brandId || undefined,
       minPrice: min === undefined ? undefined : String(min),
       maxPrice: max === undefined ? undefined : String(max),
@@ -182,7 +171,6 @@ function applyFilters(event: FormEvent<HTMLFormElement>) {
   }
 
   function resetFilters() {
-    setCategoryId("");
     setBrandId("");
     setMinPrice("");
     setMaxPrice("");
@@ -238,17 +226,6 @@ function applyFilters(event: FormEvent<HTMLFormElement>) {
         </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="text-sm text-gray-700">
-            Category ID
-            <input
-              type="number"
-              min="1"
-              value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
-              placeholder="Any category"
-              className="mt-1 h-10 w-full rounded border border-gray-300 px-3"
-            />
-          </label>
 
           <label className="text-sm text-gray-700">
             Brand ID

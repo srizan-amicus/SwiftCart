@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import Button from "@/components/ui/Button";
+import Toast from "@/components/common/Toast";
 import { ButtonVariant } from "@/constants/button-variants";
 import {
   ProductCardVariant,
@@ -32,23 +33,33 @@ export default function ProductCard({
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const isListing = variant === ProductCardVariant.Listing;
-  const isSale =
-    product.originalPrice !== undefined &&
-    product.originalPrice > product.price;
 
   const total = product.price * quantity;
 
   async function handleAddToCart() {
-    if (!onAddToCart || isAdding || quantity < 1) return;
+    if (isAdding || quantity < 1) return;
 
     setIsAdding(true);
     setIsAdded(false);
 
     try {
-      const result = await onAddToCart(product.id, quantity);
-      setIsAdded(result.success);
+      // Call the cart handler when one is provided.
+      if (onAddToCart) {
+        const result = await onAddToCart(product.id, quantity);
+
+        if (!result.success) {
+          setToastMessage("Unable to add item to cart.");
+          return;
+        }
+      }
+
+      setIsAdded(true);
+      setToastMessage(`${product.name} added to cart!`);
+    } catch {
+      setToastMessage("Unable to add item to cart. Please try again.");
     } finally {
       setIsAdding(false);
     }
@@ -69,18 +80,6 @@ export default function ProductCard({
             : "relative flex h-48 items-center justify-center overflow-hidden bg-white"
         }
       >
-        {isSale && (
-          <span className="absolute left-2 top-2 z-10 rounded bg-red-500 px-2 py-1 text-[10px] font-bold text-white">
-            SALE
-          </span>
-        )}
-
-        {product.isNew && (
-          <span className="absolute right-2 top-2 z-10 rounded bg-green-500 px-2 py-1 text-[10px] font-bold text-white">
-            NEW
-          </span>
-        )}
-
         <Link
           href={`/products/${product.id}`}
           aria-label={`View ${product.name} details`}
@@ -92,11 +91,7 @@ export default function ProductCard({
             width={400}
             height={400}
             unoptimized
-            className={
-              isListing
-                ? "h-full w-full object-contain"
-                : "h-full w-full object-contain"
-            }
+            className="h-full w-full object-contain"
           />
         </Link>
       </div>
@@ -110,7 +105,7 @@ export default function ProductCard({
           }
         >
           <Link
-           href={`/products/${product.id}`}
+            href={`/products/${product.id}`}
             className="transition-colors hover:text-orange-600"
           >
             {product.name}
@@ -135,6 +130,7 @@ export default function ProductCard({
               5 - Math.min(5, Math.max(0, Math.round(product.rating ?? 0))),
             )}
           </span>
+
           <span className="text-xs font-semibold text-gray-600">
             {(product.rating ?? 0).toFixed(1)}
           </span>
@@ -144,8 +140,10 @@ export default function ProductCard({
           <Button
             variant={ButtonVariant.QuantityAction}
             ariaLabel="Decrease quantity"
-            disabled={quantity <= 1}
-            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+            disabled={quantity <= 1 || isAdding}
+            onClick={() =>
+              setQuantity((current) => Math.max(1, current - 1))
+            }
           >
             −
           </Button>
@@ -157,6 +155,7 @@ export default function ProductCard({
           <Button
             variant={ButtonVariant.QuantityAction}
             ariaLabel="Increase quantity"
+            disabled={isAdding}
             onClick={() => setQuantity((current) => current + 1)}
           >
             +
@@ -171,11 +170,18 @@ export default function ProductCard({
           variant={ButtonVariant.Primary}
           className="!mt-2 !h-10 !w-full !min-w-0 px-2 text-sm"
           onClick={handleAddToCart}
-          disabled={!onAddToCart || isAdding || quantity < 1}
+          disabled={isAdding || quantity < 1}
         >
           {isAdding ? "Adding..." : isAdded ? "✓ Added" : "Add To Cart"}
         </Button>
       </div>
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastMessage("")}
+        />
+      )}
     </article>
   );
 }

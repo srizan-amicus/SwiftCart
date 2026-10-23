@@ -1,13 +1,14 @@
-
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
+
 import Breadcrumb from "@/components/common/Breadcrumb";
+import Toast from "@/components/common/Toast";
 import Button from "@/components/ui/Button";
 import { ButtonVariant } from "@/constants/button-variants";
 import { useProductDetails } from "@/hooks/useProductDetails";
 import { useProductActions } from "@/hooks/useProductActions";
-import { useState } from "react";
 import ProductEditForm from "./ProductEditForm";
 import type { Product } from "@/types/product";
 
@@ -26,13 +27,15 @@ export default function ProductDetails({
   isAdmin = false,
 }: ProductDetailsProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
 
-  const {
-    product,
-    loading,
-    error,
-    updateProduct,
-  } = useProductDetails(productId, initialProduct);
+  const { product, loading, error, updateProduct } = useProductDetails(
+    productId,
+    initialProduct,
+  );
 
   const {
     isSaving,
@@ -52,6 +55,18 @@ export default function ProductDetails({
     clearMessages();
   }
 
+  function handleAddToCart() {
+    if (!product || isAdding || quantity < 1) return;
+
+    setIsAdding(true);
+    setIsAdded(false);
+
+    // UI-only for now: no cart data is saved.
+    setIsAdded(true);
+    setToastMessage(`${product.name} added to cart!`);
+    setIsAdding(false);
+  }
+
   if (loading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-12">
@@ -60,8 +75,10 @@ export default function ProductDetails({
           aria-label="Loading product details"
         >
           <div className="h-6 w-40 rounded bg-gray-200" />
+
           <div className="grid gap-8 md:grid-cols-2">
             <div className="h-80 rounded-lg bg-gray-200" />
+
             <div className="space-y-4">
               <div className="h-8 w-3/4 rounded bg-gray-200" />
               <div className="h-5 w-1/3 rounded bg-gray-200" />
@@ -166,9 +183,8 @@ export default function ProductDetails({
               </p>
 
               <div className="mt-6 w-full border-t border-gray-200 pt-6">
-                <h2 className="mb-2 text-lg font-semibold">
-                  Description
-                </h2>
+                <h2 className="mb-2 text-lg font-semibold">Description</h2>
+
                 <p className="leading-7 text-gray-600">
                   {product.description || "No description available."}
                 </p>
@@ -179,6 +195,58 @@ export default function ProductDetails({
                   Brand:{" "}
                   <span className="font-medium">{product.brand}</span>
                 </p>
+              )}
+
+              {!isAdmin && (
+                <>
+                  <div className="mt-6 flex items-center gap-4">
+                    <span className="font-medium text-gray-700">
+                      Quantity
+                    </span>
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant={ButtonVariant.QuantityAction}
+                        ariaLabel="Decrease quantity"
+                        disabled={quantity <= 1 || isAdding}
+                        onClick={() =>
+                          setQuantity((current) => Math.max(1, current - 1))
+                        }
+                      >
+                        −
+                      </Button>
+
+                      <span
+                        className="min-w-6 text-center"
+                        aria-live="polite"
+                      >
+                        {quantity}
+                      </span>
+
+                      <Button
+                        variant={ButtonVariant.QuantityAction}
+                        ariaLabel="Increase quantity"
+                        disabled={isAdding}
+                        onClick={() => setQuantity((current) => current + 1)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant={ButtonVariant.Primary}
+                    className="mt-4"
+                    onClick={handleAddToCart}
+                    disabled={isAdding || quantity < 1}
+                  >
+                    {isAdding
+                      ? "Adding..."
+                      : isAdded
+                        ? "✓ Added"
+                        : "Add To Cart"}
+                  </Button>
+                </>
               )}
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -213,6 +281,13 @@ export default function ProductDetails({
           )}
         </section>
       </div>
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastMessage("")}
+        />
+      )}
     </main>
   );
 }

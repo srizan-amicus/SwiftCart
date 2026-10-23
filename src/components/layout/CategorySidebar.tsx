@@ -1,8 +1,7 @@
-
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const categories = [
   { id: 8, name: "Accessories" },
@@ -16,24 +15,26 @@ const categories = [
 ];
 
 export default function CategorySidebar() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const activeCategoryId = searchParams.get("categoryId");
+  const [isPending, startTransition] = useTransition();
 
-  function getCategoryUrl(categoryId: number) {
+  const selectedCategory = searchParams.get("categoryId");
+
+  function handleCategoryChange(categoryId: number) {
     const params = new URLSearchParams(searchParams.toString());
 
-    // Toggle off the selected category, or select a different one.
-    if (activeCategoryId === String(categoryId)) {
-      params.delete("categoryId");
-    } else {
-      params.set("categoryId", String(categoryId));
-    }
-
-    // Changing a filter should reset pagination.
+    params.set("categoryId", String(categoryId));
     params.delete("page");
 
     const queryString = params.toString();
-    return queryString ? `/products?${queryString}` : "/products";
+    const nextUrl = queryString
+      ? `/products?${queryString}`
+      : "/products";
+
+    startTransition(() => {
+      router.push(nextUrl, { scroll: false });
+    });
   }
 
   return (
@@ -43,29 +44,30 @@ export default function CategorySidebar() {
           Categories
         </h2>
 
-        <nav aria-label="Product categories">
-          <ul className="space-y-1">
-            {categories.map((category) => {
-              const isActive = activeCategoryId === String(category.id);
+        <div className="space-y-2">
+          {categories.map((category) => (
+            <label
+              key={category.id}
+              className={`flex cursor-pointer items-center gap-2 text-sm transition-colors ${
+                selectedCategory === String(category.id)
+                  ? "font-semibold text-orange-600"
+                  : "text-gray-600 hover:text-gray-900"
+              } ${isPending ? "opacity-70" : ""}`}
+            >
+              <input
+                type="radio"
+                name="category"
+                value={category.id}
+                checked={selectedCategory === String(category.id)}
+                onChange={() => handleCategoryChange(category.id)}
+                disabled={isPending}
+                className="h-4 w-4 cursor-pointer accent-orange-500"
+              />
 
-              return (
-                <li key={category.id}>
-                  <Link
-                    href={getCategoryUrl(category.id)}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`block rounded-md px-3 py-2 text-sm transition-colors ${
-                      isActive
-                        ? "bg-orange-50 font-semibold text-orange-600"
-                        : "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                    }`}
-                  >
-                    {category.name}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+              <span>{category.name}</span>
+            </label>
+          ))}
+        </div>
       </div>
     </aside>
   );
