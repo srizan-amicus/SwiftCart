@@ -158,7 +158,7 @@ export async function fetchProductsOnServer(
   const response = await fetch(
     `${normalizeBaseUrl(baseUrl)}/api/v1/products/search${querySuffix}`,
     {
-      cache: "no-store",
+      cache: "force-cache",
     },
   );
 
@@ -184,7 +184,9 @@ export async function fetchProductByIdOnServer(id: number): Promise<Product> {
 
   const response = await fetch(
     `${normalizeBaseUrl(baseUrl)}/api/v1/products/${id}`,
-    { cache: "no-store" },
+    {
+      next: { revalidate: 60 },
+    },
   );
 
   if (response.status === 404) {

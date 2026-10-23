@@ -12,15 +12,14 @@ import "swiper/css";
 import ProductCard from "@/components/ui/ProductCard";
 import Button from "@/components/ui/Button";
 import { ButtonVariant } from "@/constants/button-variants";
-import useProducts from "@/hooks/useProducts";
+import type { Product } from "@/types/product";
 
-export default function FeaturedParts() {
+interface FeaturedPartsProps {
+  initialProducts: Product[];
+}
+
+export default function FeaturedParts({ initialProducts }: FeaturedPartsProps) {
   const swiperRef = useRef<SwiperType | null>(null);
-
-  const { products, loading, error, fetchProducts } = useProducts({
-    page: 1,
-    pageSize: 8,
-  });
 
   return (
     <section className="bg-gray-50 py-10">
@@ -43,36 +42,7 @@ export default function FeaturedParts() {
           </Button>
 
           <div className="min-w-0 flex-1">
-            {loading ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {Array.from({ length: 4 }, (_, index) => (
-                  <div
-                    key={index}
-                    className="h-80 animate-pulse rounded-lg border border-gray-200 bg-white p-4"
-                  >
-                    <div className="h-44 rounded bg-gray-200" />
-                    <div className="mt-4 h-4 rounded bg-gray-200" />
-                    <div className="mt-3 h-4 w-1/2 rounded bg-gray-200" />
-                    <div className="mt-5 h-10 rounded bg-gray-200" />
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
-              <div
-                className="rounded-lg border border-red-200 bg-white p-8 text-center"
-                role="alert"
-              >
-                <p className="text-sm text-red-600">{error}</p>
-
-                <Button
-                  variant={ButtonVariant.Outline}
-                  onClick={fetchProducts}
-                  className="mx-auto mt-4 !w-auto"
-                >
-                  Try Again
-                </Button>
-              </div>
-            ) : products.length === 0 ? (
+            {initialProducts.length === 0 ? (
               <p className="rounded-lg bg-white p-8 text-center text-gray-600">
                 No featured products are available right now.
               </p>
@@ -84,7 +54,7 @@ export default function FeaturedParts() {
                 }}
                 spaceBetween={16}
                 slidesPerView={4}
-                loop={products.length > 4}
+                loop={initialProducts.length > 4}
                 breakpoints={{
                   0: {
                     slidesPerView: 1,
@@ -100,8 +70,8 @@ export default function FeaturedParts() {
                   },
                 }}
               >
-                {products.map((product) => (
-                  <SwiperSlide key={`${product.id}-${product.name}`}>
+                {initialProducts.map((product) => (
+                  <SwiperSlide key={product.id}>
                     <ProductCard product={product} />
                   </SwiperSlide>
                 ))}

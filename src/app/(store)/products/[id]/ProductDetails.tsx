@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Breadcrumb from "@/components/common/Breadcrumb";
 import Toast from "@/components/common/Toast";
@@ -15,7 +15,6 @@ import type { Product } from "@/types/product";
 interface ProductDetailsProps {
   productId: string;
   initialProduct: Product;
-  isAdmin?: boolean;
 }
 
 const FALLBACK_IMAGE =
@@ -24,13 +23,55 @@ const FALLBACK_IMAGE =
 export default function ProductDetails({
   productId,
   initialProduct,
-  isAdmin = false,
 }: ProductDetailsProps) {
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadUserRole() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          setIsAdmin(false);
+          return;
+        }
+
+        const data: unknown = await response.json();
+
+        if (
+          typeof data === "object" &&
+          data !== null &&
+          "isAdmin" in data &&
+          typeof data.isAdmin === "boolean"
+        ) {
+          setIsAdmin(data.isAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        setIsAdmin(false);
+        console.error("Unable to load the current user's role.");
+      }
+    }
+
+    void loadUserRole();
+
+    return () => controller.abort();
+  }, []);
 
   const { product, loading, error, updateProduct } = useProductDetails(
     productId,
@@ -56,7 +97,9 @@ export default function ProductDetails({
   }
 
   function handleAddToCart() {
-    if (!product || isAdding || quantity < 1) return;
+    if (!product || isAdding || quantity < 1) {
+      return;
+    }
 
     setIsAdding(true);
     setIsAdded(false);
@@ -155,9 +198,7 @@ export default function ProductDetails({
           ) : (
             <>
               {product.category && (
-                <p className="mb-2 text-sm text-gray-500">
-                  {product.category}
-                </p>
+                <p className="mb-2 text-sm text-gray-500">{product.category}</p>
               )}
 
               <h1 className="text-3xl font-bold text-gray-900">
@@ -192,17 +233,14 @@ export default function ProductDetails({
 
               {product.brand && (
                 <p className="mt-4 text-sm text-gray-600">
-                  Brand:{" "}
-                  <span className="font-medium">{product.brand}</span>
+                  Brand: <span className="font-medium">{product.brand}</span>
                 </p>
               )}
 
               {!isAdmin && (
                 <>
                   <div className="mt-6 flex items-center gap-4">
-                    <span className="font-medium text-gray-700">
-                      Quantity
-                    </span>
+                    <span className="font-medium text-gray-700">Quantity</span>
 
                     <div className="flex items-center gap-3">
                       <Button
@@ -216,10 +254,7 @@ export default function ProductDetails({
                         −
                       </Button>
 
-                      <span
-                        className="min-w-6 text-center"
-                        aria-live="polite"
-                      >
+                      <span className="min-w-6 text-center" aria-live="polite">
                         {quantity}
                       </span>
 
@@ -283,10 +318,7 @@ export default function ProductDetails({
       </div>
 
       {toastMessage && (
-        <Toast
-          message={toastMessage}
-          onClose={() => setToastMessage("")}
-        />
+        <Toast message={toastMessage} onClose={() => setToastMessage("")} />
       )}
     </main>
   );

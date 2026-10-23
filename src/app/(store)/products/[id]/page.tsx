@@ -1,10 +1,11 @@
-
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 import ProductDetails from "./ProductDetails";
-import { fetchProductByIdOnServer } from "@/services/products-api";
+import {
+  fetchProductsOnServer,
+  fetchProductByIdOnServer,
+} from "@/services/products-api";
 
 interface ProductDetailsPageProps {
   params: Promise<{
@@ -16,6 +17,19 @@ export const metadata: Metadata = {
   title: "Product Details",
   description: "View product details on SwiftCart.",
 };
+
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const result = await fetchProductsOnServer({
+    page: 1,
+    pageSize: 100,
+  });
+
+  return result.products.map((product) => ({
+    id: String(product.id),
+  }));
+}
 
 export default async function ProductDetailsPage({
   params,
@@ -39,15 +53,10 @@ export default async function ProductDetailsPage({
     throw error;
   }
 
-  const cookieStore = await cookies();
-  const role = cookieStore.get("userRole")?.value;
-  const isAdmin = role?.toLowerCase() === "admin";
-
-  return (
-    <ProductDetails
-      productId={id}
-      initialProduct={product}
-      isAdmin={isAdmin}
-    />
-  );
+ return (
+  <ProductDetails
+    productId={id}
+    initialProduct={product}
+  />
+);
 }
