@@ -4,8 +4,11 @@ import type { Metadata } from "next";
 import ProductListing from "./ProductListing";
 import {
   fetchProductsOnServer,
+  type ProductSortField,
   type ProductQueryParams,
+  type SortOrder,
 } from "@/services/products-api";
+
 
 export const metadata: Metadata = {
   title: "Products",
@@ -40,6 +43,30 @@ function getNonNegativeNumber(
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
+function getSortBy(value: string | undefined): ProductSortField | undefined {
+  const normalized = value?.toLowerCase();
+
+  if (
+    normalized === "name" ||
+    normalized === "price" ||
+    normalized === "rating"
+  ) {
+    return normalized;
+  }
+
+  return undefined;
+}
+
+function getSortOrder(value: string | undefined): SortOrder | undefined {
+  const normalized = value?.toLowerCase();
+
+  if (normalized === "asc" || normalized === "desc") {
+    return normalized;
+  }
+
+  return undefined;
+}
+
 export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
@@ -63,28 +90,22 @@ export default async function ProductsPage({
   const requestedPage =
     getPositiveInteger(getSingleParam(urlParams.page)) ?? 1;
 
-  const sortBy = getSingleParam(urlParams.sortBy);
-  const sortOrder = getSingleParam(urlParams.sortOrder);
+ const sortBy = getSortBy(getSingleParam(urlParams.sortBy));
+const sortOrder = getSortOrder(getSingleParam(urlParams.sortOrder));
 
   const params: ProductQueryParams = {
-    search: search || undefined,
-    categoryId,
-    brandId,
-    minPrice,
-    maxPrice,
-    minRating:
-      minRating !== undefined && minRating <= 5 ? minRating : undefined,
-    sortBy:
-      sortBy && ["name", "price", "rating"].includes(sortBy.toLowerCase())
-        ? sortBy.toLowerCase()
-        : undefined,
-    sortOrder:
-      sortOrder && ["asc", "desc"].includes(sortOrder.toLowerCase())
-        ? sortOrder.toLowerCase()
-        : undefined,
-    page: requestedPage,
-    pageSize: 12,
-  };
+  search: search || undefined,
+  categoryId,
+  brandId,
+  minPrice,
+  maxPrice,
+  minRating:
+    minRating !== undefined && minRating <= 5 ? minRating : undefined,
+  sortBy,
+  sortOrder: sortBy ? sortOrder : undefined,
+  page: requestedPage,
+  pageSize: 12,
+};
 
   const result = await fetchProductsOnServer(params);
 

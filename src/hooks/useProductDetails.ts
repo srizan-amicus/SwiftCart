@@ -8,8 +8,10 @@ import type { Product } from "@/types/product";
 export function useProductDetails(productId: string,
    initialProduct?: Product,
 ) {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+const [product, setProduct] = useState<Product | null>(
+  initialProduct ?? null,
+);
+ const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState<string | null>(null);
 
   //wrapping the fetching logic in usecallback to avoid unnec rerender

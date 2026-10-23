@@ -1,5 +1,8 @@
 import type { Product } from "@/types/product";
 
+export type ProductSortField = "name" | "price" | "rating";
+export type SortOrder = "asc" | "desc";
+
 export interface ProductQueryParams {
   search?: string;
   categoryId?: number;
@@ -7,8 +10,8 @@ export interface ProductQueryParams {
   minPrice?: number;
   maxPrice?: number;
   minRating?: number;
-  sortBy?: string;
-  sortOrder?: string;
+  sortBy?: ProductSortField | "";
+  sortOrder?: SortOrder;
   page?: number;
   pageSize?: number;
 }
@@ -71,6 +74,7 @@ function buildQueryString(params: ProductQueryParams): string {
 
   return query.toString();
 }
+
 function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
@@ -101,6 +105,21 @@ function mapApiProduct(
   };
 }
 
+function mapPagedResponse(
+  data: ProductApiPagedResponse,
+  imageBaseUrl?: string,
+): ProductPagedResponse {
+  return {
+    products: data.products.map((product) =>
+      mapApiProduct(product, imageBaseUrl),
+    ),
+    page: data.page,
+    pageSize: data.pageSize,
+    totalRecords: data.totalRecords,
+    totalPages: data.totalPages,
+  };
+}
+
 // Browser-side fetching through the Next.js API route.
 export async function fetchProductsFromApi(
   params: ProductQueryParams = {},
@@ -119,17 +138,8 @@ export async function fetchProductsFromApi(
   }
 
   const data: ProductApiPagedResponse = await response.json();
-  const imageBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  return {
-    products: data.products.map((product) =>
-      mapApiProduct(product, imageBaseUrl),
-    ),
-    page: data.page,
-    pageSize: data.pageSize,
-    totalRecords: data.totalRecords,
-    totalPages: data.totalPages,
-  };
+  return mapPagedResponse(data, process.env.NEXT_PUBLIC_API_BASE_URL);
 }
 
 // Server-side fetching directly from the .NET API.
@@ -158,18 +168,10 @@ export async function fetchProductsOnServer(
 
   const data: ProductApiPagedResponse = await response.json();
 
-  return {
-    products: data.products.map((product) => mapApiProduct(product, baseUrl)),
-    page: data.page,
-    pageSize: data.pageSize,
-    totalRecords: data.totalRecords,
-    totalPages: data.totalPages,
-  };
+  return mapPagedResponse(data, baseUrl);
 }
 
-export async function fetchProductByIdOnServer(
-  id: number,
-): Promise<Product> {
+export async function fetchProductByIdOnServer(id: number): Promise<Product> {
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error("Invalid product ID.");
   }
@@ -190,9 +192,7 @@ export async function fetchProductByIdOnServer(
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch product details (${response.status}).`,
-    );
+    throw new Error(`Failed to fetch product details (${response.status}).`);
   }
 
   const product: ProductApiResponse = await response.json();
