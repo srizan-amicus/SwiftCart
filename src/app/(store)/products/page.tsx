@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Products",
   description: "Browse products and discover your favorites on SwiftCart.",
 };
+export const revalidate = 60;
 
 interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
