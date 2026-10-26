@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const categories = [

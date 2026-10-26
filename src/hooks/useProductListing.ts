@@ -1,27 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import type { FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import type {
-  ProductQueryParams,
-  ProductSortField,
-  SortOrder,
+import { useDebounce } from "@/hooks/useDebounce";
+import {
+  fetchProductsFromApi,
+  type ProductPagedResponse,
+  type ProductQueryParams,
+  type ProductSortField,
+  type SortOrder,
 } from "@/services/products-api";
+import { buildProductQueryParams } from "@/utils/build-product-query";
+import { updateSearchParams } from "@/utils/update-search-params";
 import { validateProductFilters } from "@/utils/product-filter-validation";
 
 interface UseProductListingOptions {
   initialParams: ProductQueryParams;
+  initialData: ProductPagedResponse;
 }
 
-export function useProductListing({ initialParams }: UseProductListingOptions) {
+export function useProductListing({
+  initialParams,
+  initialData,
+}: UseProductListingOptions) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  const queryString = searchParams.toString();
   const currentSearch = searchParams.get("search") ?? "";
+
+  const [productsData, setProductsData] = useState(initialData);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState("");
+  const [filterError, setFilterError] = useState("");
 
   const [searchDraft, setSearchDraft] = useState(initialParams.search ?? "");
   const [brandId, setBrandId] = useState(
@@ -42,48 +57,98 @@ export function useProductListing({ initialParams }: UseProductListingOptions) {
   const [sortOrder, setSortOrder] = useState<SortOrder>(
     initialParams.sortOrder ?? "asc",
   );
-  const [filterError, setFilterError] = useState("");
+
+  const debouncedSearch = useDebounce(searchDraft, 400);
+  const hasSkippedInitialFetch = useRef(false);
+  const previousQueryString = useRef(queryString);
 
   const updateUrl = useCallback(
     (changes: Record<string, string | undefined>, resetPage = true) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      Object.entries(changes).forEach(([key, value]) => {
-        if (value === undefined || value === "") {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
-      });
-
-      if (resetPage && !Object.hasOwn(changes, "page")) {
-        params.delete("page");
-      }
-
-      const query = params.toString();
+      const query = updateSearchParams(queryString, changes, resetPage);
       const nextUrl = query ? `${pathname}?${query}` : pathname;
 
       startTransition(() => {
         router.push(nextUrl, { scroll: false });
       });
     },
-    [pathname, router, searchParams],
+    [pathname, queryString, router],
   );
 
-  // Debounce search updates so navigation does not happen on every keystroke.
+  // Fetch products when the URL query changes.
   useEffect(() => {
-    const normalizedSearch = searchDraft.trim();
+    if (!hasSkippedInitialFetch.current) {
+      hasSkippedInitialFetch.current = true;
+
+      if (queryString === "") {
+        return;
+      }
+    }
+
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      const query = buildProductQueryParams(new URLSearchParams(queryString));
+
+      setIsLoading(true);
+      setFetchError("");
+
+      try {
+        const result = await fetchProductsFromApi(query, controller.signal);
+
+        setProductsData(result);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        setFetchError("Unable to load products. Please try again.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadProducts();
+
+    return () => controller.abort();
+  }, [queryString]);
+
+  // Detect URL navigation and synchronize the filter inputs.
+  useEffect(() => {
+    if (previousQueryString.current === queryString) {
+      return;
+    }
+
+    previousQueryString.current = queryString;
+
+    setSearchDraft(searchParams.get("search") ?? "");
+    setBrandId(searchParams.get("brandId") ?? "");
+    setMinPrice(searchParams.get("minPrice") ?? "");
+    setMaxPrice(searchParams.get("maxPrice") ?? "");
+    setMinRating(searchParams.get("minRating") ?? "");
+
+    const rawSortBy = searchParams.get("sortBy");
+
+    setSortBy(
+      rawSortBy === "name" || rawSortBy === "price" || rawSortBy === "rating"
+        ? rawSortBy
+        : "",
+    );
+
+    setSortOrder(searchParams.get("sortOrder") === "desc" ? "desc" : "asc");
+  }, [queryString, searchParams]);
+
+  // Debounce search updates.
+  useEffect(() => {
+    const normalizedSearch = debouncedSearch.trim();
 
     if (normalizedSearch === currentSearch) {
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
-      updateUrl({ search: normalizedSearch || undefined });
-    }, 400);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [searchDraft, currentSearch, updateUrl]);
+    updateUrl({ search: normalizedSearch || undefined });
+  }, [debouncedSearch, currentSearch, updateUrl]);
 
   const applyFilters = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -151,9 +216,11 @@ export function useProductListing({ initialParams }: UseProductListingOptions) {
   );
 
   return {
+    productsData,
+    isLoading,
+    fetchError,
     searchDraft,
     setSearchDraft,
-
     brandId,
     setBrandId,
     minPrice,
@@ -169,7 +236,6 @@ export function useProductListing({ initialParams }: UseProductListingOptions) {
     filterError,
     applyFilters,
     resetFilters,
-
     changePage,
     updateUrl,
     isPending,

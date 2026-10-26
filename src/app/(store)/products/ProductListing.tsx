@@ -21,6 +21,9 @@ export default function ProductListing({
   initialParams,
 }: ProductListingProps) {
   const {
+    productsData,
+    isLoading,
+    fetchError,
     searchDraft,
     setSearchDraft,
     brandId,
@@ -41,13 +44,15 @@ export default function ProductListing({
     updateUrl,
     changePage,
     isPending,
-  } = useProductListing({ initialParams });
+  } = useProductListing({ initialParams, initialData });
 
-  const { products, page, pageSize, totalPages, totalRecords } = initialData;
+  const { products, page, pageSize, totalPages, totalRecords } = productsData;
 
   const firstProduct = totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
 
   const lastProduct = Math.min(page * pageSize, totalRecords);
+
+  const isUpdating = isPending || isLoading;
 
   return (
     <section className="min-w-0">
@@ -102,21 +107,59 @@ export default function ProductListing({
             : `Showing ${firstProduct}–${lastProduct} of ${totalRecords} products`}
         </p>
 
-        {isPending && (
+        {isUpdating && (
           <p className="text-sm text-gray-500">Updating products...</p>
         )}
       </div>
 
-      {products.length === 0 ? (
+      {fetchError ? (
+        <div
+          className="rounded-lg border border-red-200 bg-red-50 p-6 text-center"
+          role="alert"
+        >
+          <h2 className="font-semibold text-red-800">
+            Unable to load products
+          </h2>
+
+          <p className="mt-2 text-sm text-red-700">{fetchError}</p>
+
+          <Button
+            variant={ButtonVariant.Outline}
+            onClick={() => updateUrl({}, false)}
+            className="!mt-4 !w-auto"
+          >
+            Retry
+          </Button>
+        </div>
+      ) : products.length === 0 && isLoading ? (
+        <div
+          className="rounded-lg border border-gray-200 bg-white p-10 text-center"
+          aria-live="polite"
+        >
+          <p className="text-sm text-gray-500">Loading products...</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <h2 className="font-semibold text-gray-800">No products found</h2>
+
           <p className="mt-2 text-sm text-gray-500">
             Try a different search or adjust your filters.
           </p>
+
+          <Button
+            variant={ButtonVariant.Outline}
+            onClick={resetFilters}
+            className="!mt-4 !w-auto"
+          >
+            Reset filters
+          </Button>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+            aria-busy={isUpdating}
+          >
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -133,7 +176,7 @@ export default function ProductListing({
             >
               <Button
                 variant={ButtonVariant.Outline}
-                disabled={page <= 1 || isPending}
+                disabled={page <= 1 || isUpdating}
                 onClick={() => changePage(page - 1, totalPages)}
                 className="!w-auto"
               >
@@ -149,7 +192,7 @@ export default function ProductListing({
                         ? ButtonVariant.Primary
                         : ButtonVariant.Outline
                     }
-                    disabled={isPending}
+                    disabled={isUpdating}
                     onClick={() => changePage(pageNumber, totalPages)}
                     className="!w-auto"
                     ariaLabel={`Page ${pageNumber}`}
@@ -161,7 +204,7 @@ export default function ProductListing({
 
               <Button
                 variant={ButtonVariant.Outline}
-                disabled={page >= totalPages || isPending}
+                disabled={page >= totalPages || isUpdating}
                 onClick={() => changePage(page + 1, totalPages)}
                 className="!w-auto"
               >
