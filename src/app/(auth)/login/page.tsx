@@ -10,7 +10,7 @@ const initialState = { error: null as string | null };
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("returnTo") ?? "/products";
+  const returnTo = searchParams.get("returnTo") ?? "/";
 
   const [state, formAction, isPending] = useActionState(
     loginAction,
