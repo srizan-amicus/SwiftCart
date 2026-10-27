@@ -1,70 +1,21 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
-interface LoginResponse {
-  customerId: number;
-  name: string;
-  role: string;
-}
+import { loginAction } from "@/app/(auth)/actions";
+
+const initialState = { error: null as string | null };
 
 export default function LoginPage() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") ?? "/products";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data: unknown = await response.json();
-
-      if (!response.ok) {
-        const message =
-          typeof data === "object" &&
-          data !== null &&
-          "message" in data &&
-          typeof data.message === "string"
-            ? data.message
-            : "Login failed. Please try again.";
-
-        setError(message);
-        return;
-      }
-
-      // The API sets HttpOnly authentication cookies.
-      // Keep only the public user details in the response.
-      const user = data as LoginResponse;
-
-      console.log("Logged in successfully:", {
-        name: user.name,
-        role: user.role,
-      });
-
-      router.push("/products");
-      router.refresh();
-    } catch {
-      setError("Unable to connect to the server. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const [state, formAction, isPending] = useActionState(
+    loginAction,
+    initialState,
+  );
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
@@ -74,7 +25,15 @@ export default function LoginPage() {
         Sign in to your SwiftCart account.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      {searchParams.get("registered") === "1" && (
+        <p className="mt-4 text-sm text-green-700" role="status">
+          Account created successfully. Please sign in.
+        </p>
+      )}
+
+      <form action={formAction} className="mt-6 space-y-5">
+        <input type="hidden" name="returnTo" value={returnTo} />
+
         <div>
           <label
             htmlFor="email"
@@ -89,8 +48,6 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
             className="h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
         </div>
@@ -109,24 +66,22 @@ export default function LoginPage() {
             type="password"
             autoComplete="current-password"
             required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             className="h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
           />
         </div>
 
-        {error && (
+        {state.error && (
           <p role="alert" className="text-sm text-red-600">
-            {error}
+            {state.error}
           </p>
         )}
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isPending}
           className="h-11 w-full rounded-lg bg-orange-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? "Signing in..." : "Sign In"}
+          {isPending ? "Signing in..." : "Sign In"}
         </button>
       </form>
 
