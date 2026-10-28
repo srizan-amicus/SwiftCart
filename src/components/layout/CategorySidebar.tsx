@@ -20,7 +20,7 @@ export default function CategorySidebar() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  if (pathname === "/products" || /^\/products\/[^/]+$/.test(pathname)) {
+  if (pathname === "/products" || pathname === "/dashboard" || /^\/products\/[^/]+$/.test(pathname)) {
   return null;
 }
   const selectedCategory = searchParams.get("categoryId");

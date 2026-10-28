@@ -122,6 +122,11 @@ export async function loginAction(
     maxAge: 60 * 60 * 24 * 7,
   });
 
+  cookieStore.set("userEmail", email.trim(), {
+    ...COOKIE_OPTIONS,
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
   cookieStore.set("userRole", data.role, {
     ...COOKIE_OPTIONS,
     maxAge: 60 * 60,
@@ -184,6 +189,7 @@ export async function logoutAction(): Promise<void> {
   cookieStore.delete("refreshToken");
   cookieStore.delete("userName");
   cookieStore.delete("userRole");
+  cookieStore.delete("userEmail");
 
   redirect("/login");
 }

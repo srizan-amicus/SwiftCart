@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogIn, LogOut, Menu, ShoppingCart, UserRound, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Menu,
+  ShoppingCart,
+  UserRound,
+  X,
+} from "lucide-react";
 
 import SearchBar from "@/components/common/SearchBar";
 import { logoutAction } from "@/app/(auth)/actions";
@@ -21,9 +29,36 @@ export default function Navbar({
 }: NavbarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
+  const profileRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
+        setProfileOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   function handleSearch() {
     const query = searchTerm.trim();
@@ -57,12 +92,7 @@ export default function Navbar({
     { label: "Home", href: "/" },
     { label: "Products", href: "/products" },
     { label: "About", href: "/about" },
-    ...(isLoggedIn
-      ? [
-          { label: "Orders", href: "/orders" },
-          { label: "Checkout", href: "/checkout" },
-        ]
-      : []),
+    ...(isLoggedIn ? [{ label: "Checkout", href: "/checkout" }] : []),
   ];
 
   return (
@@ -140,12 +170,19 @@ export default function Navbar({
               </Link>
             )}
 
-            {/* Profile dropdown */}
-            <div className="group relative shrink-0">
+            {/* Profile dropdown: hover or click */}
+            <div
+              ref={profileRef}
+              className="relative shrink-0"
+              onMouseEnter={() => setProfileOpen(true)}
+              onMouseLeave={() => setProfileOpen(false)}
+            >
               <button
                 type="button"
-                aria-label="Open profile menu"
+                aria-label="Profile menu"
                 aria-haspopup="true"
+                aria-expanded={profileOpen}
+                onClick={() => setProfileOpen((open) => !open)}
                 className="flex h-11 w-auto items-center gap-2 rounded-full px-2 py-1 transition hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-3"
               >
                 {isLoggedIn && userName && (
@@ -154,7 +191,7 @@ export default function Navbar({
                   </span>
                 )}
 
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition group-hover:bg-orange-200">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition hover:bg-orange-200">
                   <UserRound size={21} strokeWidth={1.8} />
                 </span>
 
@@ -162,7 +199,9 @@ export default function Navbar({
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  className="h-3 w-3 text-gray-500 transition-transform group-hover:rotate-180 group-focus-within:rotate-180"
+                  className={`h-3 w-3 text-gray-500 transition-transform ${
+                    profileOpen ? "rotate-180" : ""
+                  }`}
                   aria-hidden="true"
                 >
                   <path
@@ -173,12 +212,18 @@ export default function Navbar({
                 </svg>
               </button>
 
-              <div className="invisible absolute right-0 top-full z-50 w-48 translate-y-2 pt-2 opacity-0 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+              <div
+                className={`absolute right-0 top-full z-50 w-52 pt-2 transition-all duration-200 ${
+                  profileOpen
+                    ? "visible translate-y-0 opacity-100"
+                    : "invisible translate-y-2 opacity-0"
+                }`}
+              >
                 <div className="overflow-hidden rounded-xl border border-gray-100 bg-white py-2 shadow-lg">
                   {isLoggedIn ? (
                     <>
                       {userName && (
-                        <div className="border-b border-gray-100 px-4 pb-2 pt-1">
+                        <div className="border-b border-gray-100 px-4 pb-3 pt-1">
                           <p className="text-xs text-gray-500">Signed in as</p>
                           <p className="truncate pt-1 text-sm font-semibold text-gray-800">
                             {userName}
@@ -186,12 +231,27 @@ export default function Navbar({
                         </div>
                       )}
 
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setProfileOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 text-sm transition hover:bg-orange-50 hover:text-orange-600 ${
+                          isActive("/dashboard")
+                            ? "font-semibold text-orange-600"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        <LayoutDashboard size={17} />
+                        Dashboard
+                      </Link>
+
+                      <div className="my-1 border-t border-gray-100" />
+
                       <form action={logoutAction}>
                         <button
                           type="submit"
                           className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
                         >
-                          <LogOut size={16} />
+                          <LogOut size={17} />
                           Logout
                         </button>
                       </form>
@@ -200,17 +260,19 @@ export default function Navbar({
                     <>
                       <Link
                         href="/login"
+                        onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
                       >
-                        <LogIn size={16} />
+                        <LogIn size={17} />
                         Sign In
                       </Link>
 
                       <Link
                         href="/register"
+                        onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 transition hover:bg-orange-50 hover:text-orange-600"
                       >
-                        <UserRound size={16} />
+                        <UserRound size={17} />
                         Create Account
                       </Link>
                     </>
@@ -259,6 +321,19 @@ export default function Navbar({
                   className="block rounded-md px-3 py-3 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600"
                 >
                   Cart ({cartItemCount})
+                </Link>
+
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-md px-3 py-3 text-sm hover:bg-orange-50 hover:text-orange-600 ${
+                    isActive("/dashboard")
+                      ? "font-semibold text-orange-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  <LayoutDashboard size={17} />
+                  Dashboard
                 </Link>
 
                 <form action={logoutAction}>

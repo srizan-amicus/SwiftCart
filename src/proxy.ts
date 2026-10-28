@@ -8,6 +8,8 @@ export function proxy(request: NextRequest) {
   let response: NextResponse;
 
   const isProtectedRoute =
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
     pathname === "/checkout" ||
     pathname.startsWith("/checkout/") ||
     pathname === "/orders" ||
