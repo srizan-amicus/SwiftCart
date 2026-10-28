@@ -58,6 +58,10 @@ const QUERY_KEYS: Record<keyof ProductQueryParams, string> = {
   pageSize: "PageSize",
 };
 
+function normalizeBaseUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
 function buildQueryString(params: ProductQueryParams): string {
   const query = new URLSearchParams();
 
@@ -66,17 +70,10 @@ function buildQueryString(params: ProductQueryParams): string {
       continue;
     }
 
-    query.set(
-      QUERY_KEYS[key as keyof ProductQueryParams] ?? key,
-      String(value),
-    );
+    query.set(QUERY_KEYS[key as keyof ProductQueryParams], String(value));
   }
 
   return query.toString();
-}
-
-function normalizeBaseUrl(url: string): string {
-  return url.replace(/\/+$/, "");
 }
 
 function mapApiProduct(
@@ -85,6 +82,7 @@ function mapApiProduct(
 ): Product {
   const imagePath = product.imagePath?.trim() || "";
   const normalizedImagePath = imagePath.replace(/^\/+/, "");
+  const normalizedBaseUrl = imageBaseUrl ? normalizeBaseUrl(imageBaseUrl) : "";
 
   return {
     id: product.productId,
@@ -93,8 +91,8 @@ function mapApiProduct(
     price: product.price,
     imagePath,
     imageUrl: normalizedImagePath
-      ? imageBaseUrl
-        ? `${normalizeBaseUrl(imageBaseUrl)}/${normalizedImagePath}`
+      ? normalizedBaseUrl
+        ? `${normalizedBaseUrl}/${normalizedImagePath}`
         : `/${normalizedImagePath}`
       : "",
     category: product.categoryName,
@@ -120,22 +118,36 @@ function mapPagedResponse(
   };
 }
 
+async function fetchProductResponse(
+  url: string,
+  errorMessage: string,
+  signal?: AbortSignal,
+  cache: RequestCache = "no-store",
+): Promise<Response> {
+  const response = await fetch(url, { signal, cache });
+
+  if (!response.ok) {
+    throw new Error(`${errorMessage} (${response.status}).`);
+  }
+
+  return response;
+}
+
+function getQuerySuffix(params: ProductQueryParams): string {
+  const queryString = buildQueryString(params);
+  return queryString ? `?${queryString}` : "";
+}
+
 // Browser-side fetching through the Next.js API route.
 export async function fetchProductsFromApi(
   params: ProductQueryParams = {},
   signal?: AbortSignal,
 ): Promise<ProductPagedResponse> {
-  const queryString = buildQueryString(params);
-  const querySuffix = queryString ? `?${queryString}` : "";
-
-  const response = await fetch(`/api/products${querySuffix}`, {
+  const response = await fetchProductResponse(
+    `/api/products${getQuerySuffix(params)}`,
+    "Failed to fetch products",
     signal,
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch products (${response.status}).`);
-  }
+  );
 
   const data: ProductApiPagedResponse = await response.json();
 
@@ -152,19 +164,12 @@ export async function fetchProductsOnServer(
     throw new Error("DOTNET_API_BASE_URL is not configured.");
   }
 
-  const queryString = buildQueryString(params);
-  const querySuffix = queryString ? `?${queryString}` : "";
-
-  const response = await fetch(
-    `${normalizeBaseUrl(baseUrl)}/api/v1/products/search${querySuffix}`,
-    {
-      cache: "force-cache",
-    },
+  const response = await fetchProductResponse(
+    `${normalizeBaseUrl(baseUrl)}/api/v1/products/search${getQuerySuffix(params)}`,
+    "Failed to fetch products",
+    undefined,
+    "force-cache",
   );
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch products (${response.status}).`);
-  }
 
   const data: ProductApiPagedResponse = await response.json();
 
@@ -182,20 +187,12 @@ export async function fetchProductByIdOnServer(id: number): Promise<Product> {
     throw new Error("DOTNET_API_BASE_URL is not configured.");
   }
 
-  const response = await fetch(
+  const response = await fetchProductResponse(
     `${normalizeBaseUrl(baseUrl)}/api/v1/products/${id}`,
-    {
-      next: { revalidate: 60 },
-    },
+    "Failed to fetch product details",
+    undefined,
+    "force-cache",
   );
-
-  if (response.status === 404) {
-    throw new Error("Product not found.");
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch product details (${response.status}).`);
-  }
 
   const product: ProductApiResponse = await response.json();
 
@@ -206,18 +203,15 @@ export async function fetchProductById(
   id: number,
   signal?: AbortSignal,
 ): Promise<Product> {
-  const response = await fetch(`/api/products/${id}`, {
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error("Invalid product ID.");
+  }
+
+  const response = await fetchProductResponse(
+    `/api/products/${id}`,
+    "Failed to fetch product details",
     signal,
-    cache: "no-store",
-  });
-
-  if (response.status === 404) {
-    throw new Error("Product not found.");
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch product details (${response.status}).`);
-  }
+  );
 
   const product: ProductApiResponse = await response.json();
 
