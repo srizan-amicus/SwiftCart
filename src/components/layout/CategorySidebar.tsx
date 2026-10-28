@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition} from "react";
+import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const categories = [
@@ -16,9 +16,13 @@ const categories = [
 
 export default function CategorySidebar() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  if (pathname === "/products" || /^\/products\/[^/]+$/.test(pathname)) {
+  return null;
+}
   const selectedCategory = searchParams.get("categoryId");
 
   function handleCategoryChange(categoryId: number) {
@@ -28,9 +32,7 @@ export default function CategorySidebar() {
     params.delete("page");
 
     const queryString = params.toString();
-    const nextUrl = queryString
-      ? `/products?${queryString}`
-      : "/products";
+    const nextUrl = queryString ? `${pathname}?${queryString}` : pathname;
 
     startTransition(() => {
       router.push(nextUrl, { scroll: false });
@@ -39,10 +41,8 @@ export default function CategorySidebar() {
 
   return (
     <aside className="w-full shrink-0 md:w-56">
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="mb-4 text-base font-bold text-gray-900">
-          Categories
-        </h2>
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+        <h2 className="mb-4 text-base font-bold text-gray-900">Categories</h2>
 
         <div className="space-y-2">
           {categories.map((category) => (
@@ -61,9 +61,8 @@ export default function CategorySidebar() {
                 checked={selectedCategory === String(category.id)}
                 onChange={() => handleCategoryChange(category.id)}
                 disabled={isPending}
-                className="h-4 w-4 cursor-pointer accent-orange-500"
+                className="h-4 w-4 accent-orange-500"
               />
-
               <span>{category.name}</span>
             </label>
           ))}
