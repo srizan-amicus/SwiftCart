@@ -1,15 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import Breadcrumb from "@/components/common/Breadcrumb";
 import Toast from "@/components/common/Toast";
 import Button from "@/components/ui/Button";
+import CartSubmitButton from "@/components/cart/CartSubmitButton";
 import { ButtonVariant } from "@/constants/button-variants";
 import { useProductDetails } from "@/hooks/useProductDetails";
 import { useProductActions } from "@/hooks/useProductActions";
 import ProductEditForm from "./ProductEditForm";
+import {
+  addToCartFormAction,
+  type CartActionResult,
+} from "@/app/(store)/cart/action";
 import type { Product } from "@/types/product";
 
 interface ProductDetailsProps {
@@ -20,16 +25,26 @@ interface ProductDetailsProps {
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600";
 
+const INITIAL_ACTION_STATE: CartActionResult = {
+  success: false,
+  message: "",
+};
+
 export default function ProductDetails({
   productId,
   initialProduct,
 }: ProductDetailsProps) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isAdded, setIsAdded] = useState(false);
+  const [toastDismissed, setToastDismissed] = useState(false);
+
+  const [actionState, formAction] = useActionState(
+    async (_previousState: CartActionResult, formData: FormData) => {
+      return addToCartFormAction(formData);
+    },
+    INITIAL_ACTION_STATE,
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,6 +93,14 @@ export default function ProductDetails({
     initialProduct,
   );
 
+  const toastMessage = actionState.message
+    ? actionState.success && product
+      ? `${product.name} added to cart!`
+      : actionState.message
+    : "";
+
+  const visibleToastMessage = toastDismissed ? "" : toastMessage;
+
   const {
     isSaving,
     saveError,
@@ -94,20 +117,6 @@ export default function ProductDetails({
   function handleCancelEdit() {
     setIsEditing(false);
     clearMessages();
-  }
-
-  function handleAddToCart() {
-    if (!product || isAdding || quantity < 1) {
-      return;
-    }
-
-    setIsAdding(true);
-    setIsAdded(false);
-
-    // UI-only for now: no cart data is saved.
-    setIsAdded(true);
-    setToastMessage(`${product.name} added to cart!`);
-    setIsAdding(false);
   }
 
   if (loading) {
@@ -246,7 +255,7 @@ export default function ProductDetails({
                       <Button
                         variant={ButtonVariant.QuantityAction}
                         ariaLabel="Decrease quantity"
-                        disabled={quantity <= 1 || isAdding}
+                        disabled={quantity <= 1}
                         onClick={() =>
                           setQuantity((current) => Math.max(1, current - 1))
                         }
@@ -261,7 +270,6 @@ export default function ProductDetails({
                       <Button
                         variant={ButtonVariant.QuantityAction}
                         ariaLabel="Increase quantity"
-                        disabled={isAdding}
                         onClick={() => setQuantity((current) => current + 1)}
                       >
                         +
@@ -269,18 +277,18 @@ export default function ProductDetails({
                     </div>
                   </div>
 
-                  <Button
-                    variant={ButtonVariant.Primary}
-                    className="mt-4"
-                    onClick={handleAddToCart}
-                    disabled={isAdding || quantity < 1}
+                  <form
+                    action={formAction}
+                    onSubmit={() => setToastDismissed(false)}
                   >
-                    {isAdding
-                      ? "Adding..."
-                      : isAdded
-                        ? "✓ Added"
-                        : "Add To Cart"}
-                  </Button>
+                    <input type="hidden" name="productId" value={product.id} />
+
+                    <input type="hidden" name="quantity" value={quantity} />
+
+                    <CartSubmitButton pendingText="Adding..." className="mt-4">
+                      {actionState.success ? "✓ Added" : "Add To Cart"}
+                    </CartSubmitButton>
+                  </form>
                 </>
               )}
 
@@ -317,8 +325,12 @@ export default function ProductDetails({
         </section>
       </div>
 
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage("")} />
+      {visibleToastMessage && (
+        <Toast
+          message={visibleToastMessage}
+          onClose={() => setToastDismissed(true)}
+          variant={actionState.success ? "success" : "error"}
+        />
       )}
     </main>
   );

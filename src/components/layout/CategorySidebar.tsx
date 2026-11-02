@@ -20,9 +20,18 @@ export default function CategorySidebar() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  if (pathname === "/products" || pathname === "/dashboard" || /^\/products\/[^/]+$/.test(pathname)) {
-  return null;
-}
+  if (
+    pathname === "/products" ||
+    pathname === "/dashboard" ||
+    pathname === "/cart" ||
+    pathname === "/order" ||
+    pathname === "/checkout" ||
+    pathname === "/payment" ||
+    pathname === "/review" ||
+    /^\/products\/[^/]+$/.test(pathname)
+  ) {
+    return null;
+  }
   const selectedCategory = searchParams.get("categoryId");
 
   function handleCategoryChange(categoryId: number) {

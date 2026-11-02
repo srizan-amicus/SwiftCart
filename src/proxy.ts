@@ -16,10 +16,11 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/orders/");
 
   const accessToken = request.cookies.get("accessToken")?.value;
-  const refreshToken = request.cookies.get("refreshToken")?.value;
 
-  if (isProtectedRoute && !accessToken && !refreshToken) {
+  // Redirect users without an access token to the login page.
+  if (isProtectedRoute && !accessToken) {
     const loginUrl = new URL("/login", request.url);
+
     loginUrl.searchParams.set("returnTo", `${pathname}${search}`);
 
     response = NextResponse.redirect(loginUrl);

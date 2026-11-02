@@ -30,14 +30,13 @@ export async function getAuthSession(): Promise<AuthSession> {
   const cookieStore = await cookies();
 
   const accessToken = cookieStore.get("accessToken")?.value;
-  const refreshToken = cookieStore.get("refreshToken")?.value;
   const name = cookieStore.get("userName")?.value ?? null;
   const role = cookieStore.get("userRole")?.value ?? null;
 
   return {
-    isLoggedIn: Boolean(accessToken || refreshToken),
-    name,
-    role,
+    isLoggedIn: Boolean(accessToken),
+    name: accessToken ? name : null,
+    role: accessToken ? role : null,
   };
 }
 

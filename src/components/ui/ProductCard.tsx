@@ -1,69 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 import Button from "@/components/ui/Button";
+import CartSubmitButton from "@/components/cart/CartSubmitButton";
 import Toast from "@/components/common/Toast";
 import { ButtonVariant } from "@/constants/button-variants";
 import {
   ProductCardVariant,
   type ProductCardVariant as ProductCardVariantType,
 } from "@/constants/product-variants";
+import { addToCartFormAction } from "@/app/(store)/cart/action";
+import type { CartActionResult } from "@/app/(store)/cart/action";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
   product: Product;
   variant?: ProductCardVariantType;
-  onAddToCart?: (
-    productId: number,
-    quantity: number,
-  ) => Promise<{ success: boolean }>;
 }
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600";
 
+const INITIAL_ACTION_STATE: CartActionResult = {
+  success: false,
+  message: "",
+};
+
 export default function ProductCard({
   product,
   variant = ProductCardVariant.Default,
-  onAddToCart,
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isAdded, setIsAdded] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const [toastDismissed, setToastDismissed] = useState(false);
+
+  const [actionState, formAction] = useActionState(
+    async (_previousState: CartActionResult, formData: FormData) => {
+      return addToCartFormAction(formData);
+    },
+    INITIAL_ACTION_STATE,
+  );
 
   const isListing = variant === ProductCardVariant.Listing;
-
   const total = product.price * quantity;
+  const isAdded = actionState.success;
 
-  async function handleAddToCart() {
-    if (isAdding || quantity < 1) return;
-
-    setIsAdding(true);
-    setIsAdded(false);
-
-    try {
-      // Call the cart handler when one is provided.
-      if (onAddToCart) {
-        const result = await onAddToCart(product.id, quantity);
-
-        if (!result.success) {
-          setToastMessage("Unable to add item to cart.");
-          return;
-        }
-      }
-
-      setIsAdded(true);
-      setToastMessage(`${product.name} added to cart!`);
-    } catch {
-      setToastMessage("Unable to add item to cart. Please try again.");
-    } finally {
-      setIsAdding(false);
-    }
-  }
+  const toastMessage = toastDismissed
+    ? ""
+    : actionState.message
+      ? actionState.success
+        ? `${product.name} added to cart!`
+        : actionState.message
+      : "";
 
   return (
     <article
@@ -140,10 +130,8 @@ export default function ProductCard({
           <Button
             variant={ButtonVariant.QuantityAction}
             ariaLabel="Decrease quantity"
-            disabled={quantity <= 1 || isAdding}
-            onClick={() =>
-              setQuantity((current) => Math.max(1, current - 1))
-            }
+            disabled={quantity <= 1}
+            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
           >
             −
           </Button>
@@ -155,7 +143,6 @@ export default function ProductCard({
           <Button
             variant={ButtonVariant.QuantityAction}
             ariaLabel="Increase quantity"
-            disabled={isAdding}
             onClick={() => setQuantity((current) => current + 1)}
           >
             +
@@ -166,22 +153,31 @@ export default function ProductCard({
           Total: ₹{total.toFixed(2)}
         </p>
 
-        <Button
-          variant={ButtonVariant.Primary}
-          className="!mt-2 !h-10 !w-full !min-w-0 px-2 text-sm"
-          onClick={handleAddToCart}
-          disabled={isAdding || quantity < 1}
+        <form
+          action={(formData) => {
+            setToastDismissed(false);
+            formAction(formData);
+          }}
         >
-          {isAdding ? "Adding..." : isAdded ? "✓ Added" : "Add To Cart"}
-        </Button>
+          <input type="hidden" name="productId" value={product.id} />
+          <input type="hidden" name="quantity" value={quantity} />
+
+          <CartSubmitButton
+            pendingText="Adding..."
+            className="!mt-2 !h-10 !w-full !min-w-0 px-2 text-sm"
+          >
+            {isAdded ? "✓ Added" : "Add To Cart"}
+          </CartSubmitButton>
+        </form>
       </div>
 
       {toastMessage && (
-        <Toast
-          message={toastMessage}
-          onClose={() => setToastMessage("")}
-        />
-      )}
+  <Toast
+    message={toastMessage}
+    onClose={() => setToastDismissed(true)}
+    variant={actionState.success ? "success" : "error"}
+  />
+)}
     </article>
   );
 }
