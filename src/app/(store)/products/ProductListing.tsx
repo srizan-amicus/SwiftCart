@@ -1,8 +1,8 @@
-
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 
 import ProductCard from "@/components/ui/ProductCard";
@@ -26,6 +26,8 @@ export default function ProductListing({
   initialParams,
 }: ProductListingProps) {
   const router = useRouter();
+
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const {
     productsData,
@@ -55,8 +57,7 @@ export default function ProductListing({
 
   const { products, page, pageSize, totalPages, totalRecords } = productsData;
 
-  const firstProduct =
-    totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
+  const firstProduct = totalRecords === 0 ? 0 : (page - 1) * pageSize + 1;
 
   const lastProduct = Math.min(page * pageSize, totalRecords);
   const isUpdating = isPending || isLoading;
@@ -152,27 +153,62 @@ export default function ProductListing({
               />
             </div>
 
-            {/* Mobile filters */}
+            {/* Mobile collapsible filters */}
             <div className="mb-5 md:hidden">
-              <ProductFilters
-                brandId={brandId}
-                setBrandId={setBrandId}
-                minPrice={minPrice}
-                setMinPrice={setMinPrice}
-                maxPrice={maxPrice}
-                setMaxPrice={setMaxPrice}
-                minRating={minRating}
-                setMinRating={setMinRating}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                sortOrder={sortOrder}
-                setSortOrder={setSortOrder}
-                filterError={filterError}
-                applyFilters={applyFilters}
-                resetFilters={resetFilters}
-              />
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIsMobileFiltersOpen((previous) => !previous)
+                  }
+                  aria-expanded={isMobileFiltersOpen}
+                  aria-controls="mobile-product-filters"
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-gray-50"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-gray-800">
+                    <SlidersHorizontal size={18} className="text-orange-600" />
+                    Filters & Sorting
+                  </span>
+
+                  <ChevronDown
+                    size={20}
+                    className={`text-gray-500 transition-transform duration-200 ${
+                      isMobileFiltersOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {isMobileFiltersOpen && (
+                  <div
+                    id="mobile-product-filters"
+                    className="border-t border-gray-200 p-4"
+                  >
+                    <ProductFilters
+                      brandId={brandId}
+                      setBrandId={setBrandId}
+                      minPrice={minPrice}
+                      setMinPrice={setMinPrice}
+                      maxPrice={maxPrice}
+                      setMaxPrice={setMaxPrice}
+                      minRating={minRating}
+                      setMinRating={setMinRating}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
+                      sortOrder={sortOrder}
+                      setSortOrder={setSortOrder}
+                      filterError={filterError}
+                      applyFilters={(event) => {
+                        applyFilters(event);
+                        setIsMobileFiltersOpen(false);
+                      }}
+                      resetFilters={resetFilters}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Product count and loading status */}
             <div
               className="mb-4 flex flex-wrap items-center justify-between gap-3"
               aria-live="polite"
@@ -184,12 +220,11 @@ export default function ProductListing({
               </p>
 
               {isUpdating && (
-                <p className="text-sm text-gray-500">
-                  Updating products...
-                </p>
+                <p className="text-sm text-gray-500">Updating products...</p>
               )}
             </div>
 
+            {/* Error state */}
             {fetchError ? (
               <div
                 className="rounded-xl border border-red-200 bg-white p-8 text-center"
@@ -214,9 +249,7 @@ export default function ProductListing({
                 className="rounded-xl border border-gray-200 bg-white p-10 text-center"
                 aria-live="polite"
               >
-                <p className="text-sm text-gray-500">
-                  Loading products...
-                </p>
+                <p className="text-sm text-gray-500">Loading products...</p>
               </div>
             ) : products.length === 0 ? (
               <div className="rounded-xl border border-gray-200 bg-white p-10 text-center">
@@ -238,6 +271,7 @@ export default function ProductListing({
               </div>
             ) : (
               <>
+                {/* Product grid */}
                 <div
                   className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
                   aria-busy={isUpdating}
@@ -251,6 +285,7 @@ export default function ProductListing({
                   ))}
                 </div>
 
+                {/* Pagination */}
                 {totalPages > 1 && (
                   <nav
                     aria-label="Product pagination"
