@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const role = request.cookies.get("userRole")?.value;
+import { NextResponse } from "next/server";
 
+const DEMO_USER_ROLE = "Customer";
+
+export async function GET() {
   return NextResponse.json(
     {
-      isAdmin: role?.toLowerCase() === "admin",
+      isAdmin: DEMO_USER_ROLE.toLowerCase() === "admin",
     },
     {
       headers: {

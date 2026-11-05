@@ -1,3 +1,4 @@
+
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -12,8 +13,6 @@ const COOKIE_OPTIONS = {
 
 export interface AuthSession {
   isLoggedIn: boolean;
-  name: string | null;
-  role: string | null;
 }
 
 export async function getAccessToken(): Promise<string | null> {
@@ -27,16 +26,10 @@ export async function getRefreshToken(): Promise<string | null> {
 }
 
 export async function getAuthSession(): Promise<AuthSession> {
-  const cookieStore = await cookies();
-
-  const accessToken = cookieStore.get("accessToken")?.value;
-  const name = cookieStore.get("userName")?.value ?? null;
-  const role = cookieStore.get("userRole")?.value ?? null;
+  const accessToken = await getAccessToken();
 
   return {
     isLoggedIn: Boolean(accessToken),
-    name: accessToken ? name : null,
-    role: accessToken ? role : null,
   };
 }
 
@@ -93,7 +86,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 export function clearAuthCookies(response: NextResponse): void {
-  const cookieNames = ["accessToken", "refreshToken", "userName", "userRole"];
+  const cookieNames = ["accessToken", "refreshToken"];
 
   for (const name of cookieNames) {
     response.cookies.set(name, "", {

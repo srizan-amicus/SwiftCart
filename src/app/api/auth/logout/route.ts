@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -14,7 +15,6 @@ export async function POST() {
 
   response.cookies.set("accessToken", "", cookieOptions);
   response.cookies.set("refreshToken", "", cookieOptions);
-  response.cookies.set("userRole", "", cookieOptions);
 
   return response;
 }

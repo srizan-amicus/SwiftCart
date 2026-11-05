@@ -268,11 +268,6 @@ export default function PaymentSelectionForm() {
               );
             })}
           </div>
-
-          <p className="mt-5 text-xs leading-5 text-gray-500">
-            Your selected method is recorded with your order.
-            Payment processing uses the existing payment service.
-          </p>
         </section>
       </div>
 

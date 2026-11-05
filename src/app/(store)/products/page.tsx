@@ -8,8 +8,6 @@ export const metadata: Metadata = {
   description: "Browse products and discover your favorites on SwiftCart.",
 };
 
-// Revalidate the static listing page every 60 seconds.
-export const revalidate = 60;
 
 export default async function ProductsPage() {
   const initialParams = {

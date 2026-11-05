@@ -1,3 +1,4 @@
+
 "use server";
 
 import { cookies } from "next/headers";
@@ -92,15 +93,10 @@ export async function loginAction(
     data === null ||
     !("token" in data) ||
     !("refreshToken" in data) ||
-    !("name" in data) ||
-    !("role" in data) ||
     typeof data.token !== "string" ||
     typeof data.refreshToken !== "string" ||
-    typeof data.name !== "string" ||
-    typeof data.role !== "string" ||
     !data.token ||
-    !data.refreshToken ||
-    !data.role.trim()
+    !data.refreshToken
   ) {
     return { error: "The backend returned an invalid login response." };
   }
@@ -115,21 +111,6 @@ export async function loginAction(
   cookieStore.set("refreshToken", data.refreshToken, {
     ...COOKIE_OPTIONS,
     maxAge: 60 * 60 * 24 * 7,
-  });
-
-  cookieStore.set("userName", data.name, {
-    ...COOKIE_OPTIONS,
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  cookieStore.set("userEmail", email.trim(), {
-    ...COOKIE_OPTIONS,
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  cookieStore.set("userRole", data.role, {
-    ...COOKIE_OPTIONS,
-    maxAge: 60 * 60,
   });
 
   redirect(returnTo);
@@ -187,9 +168,6 @@ export async function logoutAction(): Promise<void> {
 
   cookieStore.delete("accessToken");
   cookieStore.delete("refreshToken");
-  cookieStore.delete("userName");
-  cookieStore.delete("userRole");
-  cookieStore.delete("userEmail");
 
   redirect("/login");
 }

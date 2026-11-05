@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowRight, Package, ShoppingBag, UserRound } from "lucide-react";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import {
   getAddresses,
@@ -11,6 +9,12 @@ import {
 } from "@/services/dashboard-api";
 
 import DashboardSkeleton from "./_components/DashboardSkeleton";
+
+// Hardcoded demo-user details
+const DEMO_USER = {
+  name: "Shivam",
+  role: "Customer",
+};
 
 async function AccountOverview() {
   const [addresses, cart] = await Promise.all([getAddresses(), getCart()]);
@@ -156,7 +160,7 @@ async function RecentOrders() {
             href="/products"
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600"
           >
-            Explore products <ArrowRight size={16} />
+            Explore products <ArrowRight size={17} />
           </Link>
         </div>
       ) : (
@@ -215,18 +219,7 @@ async function RecentOrders() {
   );
 }
 
-export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken")?.value;
-  const refreshToken = cookieStore.get("refreshToken")?.value;
-
-  if (!accessToken && !refreshToken) {
-    redirect("/login?returnTo=%2Fdashboard");
-  }
-
-  const userName = cookieStore.get("userName")?.value ?? "there";
-  const userEmail = cookieStore.get("userEmail")?.value;
-
+export default function DashboardPage() {
   return (
     <main className="space-y-8 pb-10">
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 px-6 py-8 text-white shadow-sm sm:px-9 sm:py-10">
@@ -238,15 +231,15 @@ export default async function DashboardPage() {
             YOUR SWIFTCART SPACE
           </p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Welcome back, {userName}!
+            Welcome back, {DEMO_USER.name}!
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-orange-50 sm:text-base">
             Everything you need for your shopping journey, all in one place.
             Check your orders and pick up where you left off.
           </p>
-          {userEmail && (
-            <p className="mt-4 text-sm text-white/90">{userEmail}</p>
-          )}
+          <p className="mt-4 text-sm font-medium text-white/90">
+            Account type: {DEMO_USER.role}
+          </p>
           <Link
             href="/products"
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-orange-700 shadow-sm transition hover:bg-orange-50"

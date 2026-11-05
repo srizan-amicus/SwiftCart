@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import {
   BookOpen,
   CreditCard,
@@ -32,7 +33,18 @@ const quickLinks = [
   { label: "Create Account", href: "/register" },
 ];
 
-export default function Footer() {
+async function getCurrentYear() {
+  "use cache";
+
+  // Revalidate the cached year daily.
+  cacheLife("days");
+
+  return new Date().getFullYear();
+}
+
+export default async function Footer() {
+  const currentYear = await getCurrentYear();
+
   return (
     <footer className="mt-auto">
       <section className="bg-gray-800 text-white">
@@ -118,7 +130,7 @@ export default function Footer() {
             <span>Secure shopping experience</span>
           </div>
 
-          <p>© {new Date().getFullYear()} SwiftCart</p>
+          <p>© {currentYear} SwiftCart</p>
         </div>
       </section>
     </footer>

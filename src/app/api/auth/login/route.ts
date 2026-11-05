@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.DOTNET_API_BASE_URL?.replace(/\/+$/, "");
@@ -81,6 +82,8 @@ export async function POST(request: NextRequest) {
 
     const loginData = data as LoginResponse;
 
+    // Return profile information for compatibility with the existing login flow.
+    // These details are not stored in cookies.
     const result = NextResponse.json({
       customerId: loginData.customerId,
       name: loginData.name,
@@ -103,14 +106,6 @@ export async function POST(request: NextRequest) {
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
-    });
-
-    result.cookies.set("userRole", loginData.role, {
-      httpOnly: true,
-      secure,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60,
     });
 
     return result;

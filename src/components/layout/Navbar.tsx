@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -17,24 +18,66 @@ import SearchBar from "@/components/common/SearchBar";
 import { logoutAction } from "@/app/(auth)/actions";
 
 interface NavbarProps {
-  cartItemCount?: number;
   isLoggedIn: boolean;
   userName: string | null;
 }
 
-export default function Navbar({
-  cartItemCount = 0,
-  isLoggedIn,
-  userName,
-}: NavbarProps) {
+interface CartCountResponse {
+  itemCount: number;
+}
+
+export default function Navbar({ isLoggedIn, userName }: NavbarProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
 
+  // Fetch cart count after the Navbar has rendered.
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function fetchCartCount() {
+      try {
+        const response = await fetch("/api/cart/count", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to fetch cart item count.");
+        }
+
+        const data: CartCountResponse = await response.json();
+
+        if (typeof data.itemCount === "number") {
+          setCartItemCount(data.itemCount);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        console.error("Failed to fetch cart item count:", error);
+      }
+    }
+
+    fetchCartCount();
+
+    return () => {
+      controller.abort();
+    };
+  }, [isLoggedIn]);
+
+  // Handle outside clicks and Escape key for the profile dropdown.
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
       if (
@@ -94,6 +137,9 @@ export default function Navbar({
     { label: "About", href: "/about" },
     ...(isLoggedIn ? [{ label: "Checkout", href: "/checkout" }] : []),
   ];
+
+  // Prevent displaying a previous session's cart count when logged out.
+  const displayedCartItemCount = isLoggedIn ? cartItemCount : 0;
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
@@ -156,21 +202,23 @@ export default function Navbar({
             {isLoggedIn && (
               <Link
                 href="/cart"
-                aria-label={`Cart, ${cartItemCount} items`}
+                aria-label={`Cart, ${displayedCartItemCount} items`}
                 className={`relative shrink-0 transition hover:text-orange-600 ${
                   isActive("/cart") ? "text-orange-600" : "text-gray-600"
                 }`}
               >
                 <ShoppingCart size={22} />
-                {cartItemCount > 0 && (
+                {displayedCartItemCount > 0 && (
                   <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-600 px-1 text-[10px] font-bold text-white">
-                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                    {displayedCartItemCount > 99
+                      ? "99+"
+                      : displayedCartItemCount}
                   </span>
                 )}
               </Link>
             )}
 
-            {/* Profile dropdown: hover or click */}
+            {/* Profile dropdown */}
             <div
               ref={profileRef}
               className="relative shrink-0"
@@ -320,7 +368,7 @@ export default function Navbar({
                   onClick={() => setMenuOpen(false)}
                   className="block rounded-md px-3 py-3 text-sm text-gray-600 hover:bg-orange-50 hover:text-orange-600"
                 >
-                  Cart ({cartItemCount})
+                  Cart ({displayedCartItemCount})
                 </Link>
 
                 <Link
