@@ -7,9 +7,13 @@ import { getOrderById } from "@/services/orders-api";
 
 import type { DisplayPaymentMethod } from "@/types/payment";
 
-export const metadata = {
-  title: "Review Your Order | SwiftCart",
-};
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Review Your Order",
+  description:
+    "Review your SwiftCart order items, shipping address, delivery method, payment method, and total amount before placing your order.",
+});
 
 const validPaymentMethods: DisplayPaymentMethod[] = [
   "Card",

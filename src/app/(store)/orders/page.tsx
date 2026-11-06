@@ -3,14 +3,17 @@ import Link from "next/link";
 
 import { getOrderHistory } from "@/services/dashboard-api";
 import { getOrderById } from "@/services/orders-api";
-import type { OrderItem } from "@/types/order";
+import type { OrderDetails } from "@/types/order";
 
 import OrderCard from "./_components/OrderCard";
 
-export const metadata = {
-  title: "My Orders | SwiftCart",
-  description: "View your SwiftCart order history and track your purchases.",
-};
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "My Orders",
+  description:
+    "View your SwiftCart order history, track purchases, and revisit your order details.",
+});
 
 const PAGE_SIZE = 8;
 
@@ -66,8 +69,7 @@ async function OrdersContent({ searchParams }: OrdersContentProps) {
 
   const history = await getOrderHistory(page, PAGE_SIZE, status);
 
-  // The history endpoint doesn't return order items, so fetch details
-  // for the current page's orders to calculate item counts and thumbnails.
+  // Fetch full details for each order on the current page.
   const ordersWithDetails = await Promise.all(
     history.orders.map(async (order) => {
       try {
@@ -75,17 +77,17 @@ async function OrdersContent({ searchParams }: OrdersContentProps) {
 
         return {
           order,
-          items: details.items,
+          details,
           itemCount: details.items.reduce(
             (total, item) => total + item.quantity,
             0,
           ),
         };
       } catch {
-        // Keep the order visible even if its details cannot be retrieved.
+        // Keep the order visible if its details cannot be retrieved.
         return {
           order,
-          items: null as OrderItem[] | null,
+          details: null as OrderDetails | null,
           itemCount: null as number | null,
         };
       }
@@ -106,9 +108,11 @@ async function OrdersContent({ searchParams }: OrdersContentProps) {
     const query = new URLSearchParams();
 
     if (options.status) query.set("status", options.status);
+
     if (options.page && options.page > 1) {
       query.set("page", String(options.page));
     }
+
     if (options.search) query.set("search", options.search);
 
     const queryString = query.toString();
@@ -183,7 +187,7 @@ async function OrdersContent({ searchParams }: OrdersContentProps) {
               return (
                 <Link
                   key={tab.label}
-                  href={buildOrdersUrl({ status: tab.value })}
+                  href={buildOrdersUrl({ status: tab.value, search })}
                   aria-current={isActive ? "page" : undefined}
                   className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                     isActive
@@ -228,11 +232,11 @@ async function OrdersContent({ searchParams }: OrdersContentProps) {
           </section>
         ) : (
           <div className="space-y-4">
-            {visibleOrders.map(({ order, items, itemCount }) => (
+            {visibleOrders.map(({ order, details, itemCount }) => (
               <OrderCard
                 key={order.orderId}
                 order={order}
-                items={items}
+                details={details}
                 itemCount={itemCount}
               />
             ))}

@@ -10,6 +10,14 @@ import {
 
 import DashboardSkeleton from "./_components/DashboardSkeleton";
 
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "My Dashboard",
+  description:
+    "Manage your SwiftCart account, review recent orders, check your cart, and view your saved address.",
+});
+
 // Hardcoded demo-user details
 const DEMO_USER = {
   name: "Shivam",

@@ -16,6 +16,8 @@ import { addToCartFormAction } from "@/app/(store)/cart/action";
 import type { CartActionResult } from "@/app/(store)/cart/action";
 import type { Product } from "@/types/product";
 
+import { IMAGE_BLUR_DATA_URL } from "@/constants/image";
+
 interface ProductCardProps {
   product: Product;
   variant?: ProductCardVariantType;
@@ -80,7 +82,9 @@ export default function ProductCard({
             alt={product.name}
             width={400}
             height={400}
-            unoptimized
+            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 25vw"
+            placeholder="blur"
+            blurDataURL={IMAGE_BLUR_DATA_URL}
             className="h-full w-full object-contain"
           />
         </Link>
@@ -172,12 +176,12 @@ export default function ProductCard({
       </div>
 
       {toastMessage && (
-  <Toast
-    message={toastMessage}
-    onClose={() => setToastDismissed(true)}
-    variant={actionState.success ? "success" : "error"}
-  />
-)}
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastDismissed(true)}
+          variant={actionState.success ? "success" : "error"}
+        />
+      )}
     </article>
   );
 }

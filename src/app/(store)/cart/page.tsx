@@ -1,10 +1,17 @@
-
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getCart } from "@/services/cart-api";
 import CartContent from "@/components/cart/CartContent";
+
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Shopping Cart",
+  description:
+    "Review the items in your SwiftCart shopping cart before proceeding to checkout.",
+});
 
 async function CartPageContent() {
   const cookieStore = await cookies();
@@ -25,9 +32,7 @@ function CartLoading() {
       className="flex min-h-[50vh] items-center justify-center"
       aria-live="polite"
     >
-      <p className="text-sm font-medium text-gray-500">
-        Loading your cart...
-      </p>
+      <p className="text-sm font-medium text-gray-500">Loading your cart...</p>
     </div>
   );
 }

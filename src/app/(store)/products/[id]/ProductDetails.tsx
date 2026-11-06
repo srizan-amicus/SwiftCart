@@ -17,6 +17,8 @@ import {
 } from "@/app/(store)/cart/action";
 import type { Product } from "@/types/product";
 
+import { IMAGE_BLUR_DATA_URL } from "@/constants/image";
+
 interface ProductDetailsProps {
   productId: string;
   initialProduct: Product;
@@ -188,7 +190,9 @@ export default function ProductDetails({
             alt={product.name}
             width={600}
             height={600}
-            unoptimized
+            sizes="(max-width: 768px) 100vw, 50vw"
+            placeholder="blur"
+            blurDataURL={IMAGE_BLUR_DATA_URL}
             priority
             className="max-h-[450px] w-full object-contain"
           />

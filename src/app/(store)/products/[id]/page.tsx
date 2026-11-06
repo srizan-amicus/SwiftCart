@@ -8,16 +8,32 @@ import {
   fetchProductByIdOnServer,
 } from "@/services/products-api";
 
+import { createProductMetadata, createNotFoundMetadata } from "@/lib/seo";
+
 interface ProductDetailsPageProps {
   params: Promise<{
     id: string;
   }>;
 }
 
-export const metadata: Metadata = {
-  title: "Product Details",
-  description: "View product details on SwiftCart.",
-};
+export async function generateMetadata({
+  params,
+}: ProductDetailsPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const productId = Number(id);
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return createNotFoundMetadata();
+  }
+
+  try {
+    const product = await fetchProductByIdOnServer(productId);
+
+    return createProductMetadata(product);
+  } catch {
+    return createNotFoundMetadata();
+  }
+}
 
 export async function generateStaticParams() {
   const result = await fetchProductsOnServer({

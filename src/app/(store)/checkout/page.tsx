@@ -7,9 +7,13 @@ import { getCart } from "@/services/cart-api";
 import type { Address } from "@/types/checkout";
 import { continueCheckout } from "./action";
 
-export const metadata = {
-  title: "Checkout | SwiftCart",
-};
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Checkout",
+  description:
+    "Complete your SwiftCart order by reviewing your items and providing your delivery details.",
+});
 
 function CheckoutSkeleton() {
   return (

@@ -3,9 +3,13 @@ import { redirect } from "next/navigation";
 
 import { getOrderById } from "@/services/orders-api";
 
-export const metadata = {
-  title: "Order Confirmation | SwiftCart",
-};
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata = createPageMetadata({
+  title: "Order Confirmation",
+  description:
+    "Your SwiftCart order has been placed successfully. Review your order items, delivery address, payment details, and order summary.",
+});
 
 interface OrderPageProps {
   searchParams: Promise<{
