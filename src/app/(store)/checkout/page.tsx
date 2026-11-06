@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import CheckoutForm from "@/components/checkout/CheckoutForm";
@@ -10,7 +11,24 @@ export const metadata = {
   title: "Checkout | SwiftCart",
 };
 
-export default async function CheckoutPage() {
+function CheckoutSkeleton() {
+  return (
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="h-8 w-48 animate-pulse rounded-lg bg-gray-200" />
+
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <div className="h-48 animate-pulse rounded-2xl bg-gray-100" />
+          <div className="h-64 animate-pulse rounded-2xl bg-gray-100" />
+        </div>
+
+        <div className="h-72 animate-pulse rounded-2xl bg-gray-100" />
+      </div>
+    </main>
+  );
+}
+
+async function CheckoutContent() {
   const cartItems = await getCart().catch(() => {
     redirect("/login?redirect=/checkout");
   });
@@ -39,8 +57,16 @@ export default async function CheckoutPage() {
         addresses={addresses}
         cartItems={cartItems}
         subtotal={subtotal}
-       onContinue={continueCheckout}
+        onContinue={continueCheckout}
       />
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<CheckoutSkeleton />}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

@@ -28,6 +28,7 @@ export default function CategorySidebar() {
     pathname === "/checkout" ||
     pathname === "/payment" ||
     pathname === "/review" ||
+    pathname === "/orders" ||
     /^\/products\/[^/]+$/.test(pathname)
   ) {
     return null;

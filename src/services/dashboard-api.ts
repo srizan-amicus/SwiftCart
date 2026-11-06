@@ -91,12 +91,18 @@ export async function getCart(): Promise<CartItem[]> {
 export async function getOrderHistory(
   page = 1,
   pageSize = 10,
+  status?: string,
 ): Promise<OrderHistoryResponse> {
   await simulateDelay(1200);
+
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+
+  if (status) {
+    params.set("status", status);
+  }
 
   return fetchAuthenticated<OrderHistoryResponse>(
     `/api/v1/orders/history?${params.toString()}`,
