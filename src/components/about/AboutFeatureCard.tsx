@@ -1,3 +1,4 @@
+import Image from "next/image";
 interface AboutFeatureCardProps {
   title: string;
   description: string;
@@ -17,13 +18,15 @@ export default function AboutFeatureCard({
 }: AboutFeatureCardProps) {
   return (
     <article className="flex h-full flex-col border-b-2 border-gray-700 bg-white">
-      <div
-        role="img"
-        aria-label={imageAlt}
-        className="h-56 shrink-0 bg-cover bg-center sm:h-64"
-        style={{ backgroundImage: `url('${image}')` }}
-      />
-
+      <div className="relative h-56 shrink-0 sm:h-64">
+        <Image
+          src={image}
+          alt={imageAlt}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+        />
+      </div>
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <h3 className="text-2xl font-bold leading-tight text-gray-700 sm:text-3xl">
           {title}
