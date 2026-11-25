@@ -206,17 +206,6 @@ async function RecentOrders() {
                       {formatCurrency(order.totalAmount)}
                     </p>
                   </div>
-
-                  <Link
-                    href={`/orders/${order.orderId}`}
-                    aria-label={`View order ${order.orderId}`}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
-                  >
-                    <ArrowRight
-                      size={18}
-                      className="transition-transform group-hover:translate-x-0.5"
-                    />
-                  </Link>
                 </div>
               </div>
             </article>
